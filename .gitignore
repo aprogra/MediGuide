@@ -25,7 +25,13 @@ TestResults.xml
 .idea/
 *.iml
 *.iws
+*.ipr
 out/
+.idea/**/workspace.xml
+.idea/**/tasks.xml
+.idea/**/usage.statistics.xml
+.idea/**/dictionaries
+.idea/**/shelf
 
 ### Maven ###
 target/

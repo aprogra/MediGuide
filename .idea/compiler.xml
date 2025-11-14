@@ -6,13 +6,20 @@
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
+        <module name="patient-service" />
         <module name="common" />
+        <module name="ai-service" />
+        <module name="doctor-service" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
+      <module name="ai-service" target="17" />
       <module name="AI_server" target="1.5" />
       <module name="common" target="17" />
+      <module name="doctor-service" target="17" />
       <module name="doctor_client" target="1.5" />
+      <module name="MediGuide" target="1.5" />
+      <module name="patient-service" target="17" />
       <module name="patient_client" target="1.5" />
     </bytecodeTargetLevel>
   </component>
