@@ -11,7 +11,7 @@
     </annotationProcessing>
     <bytecodeTargetLevel>
       <module name="AI_server" target="1.5" />
-      <module name="common" target="1.5" />
+      <module name="common" target="17" />
       <module name="doctor_client" target="1.5" />
       <module name="patient_client" target="1.5" />
     </bytecodeTargetLevel>
