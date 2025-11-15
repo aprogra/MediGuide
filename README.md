@@ -79,15 +79,15 @@ MediGuide/
 │       ├── router/           # 路由配置
 │       ├── store/            # 状态管理
 │       └── api/              # API接口调用
-├── common/                    # 公共模块
-│   ├── pom.xml               # 公共依赖配置
-│   ├── README.md             # 公共模块说明
+├── common/                    # 公共模块 - 系统通用功能库
+│   ├── pom.xml               # 公共依赖配置（Lombok、Hutool工具包）
+│   ├── README.md             # 公共模块详细说明文档
 │   └── src/
 │       └── main/java/com/medicguide/common/
-│           ├── config/       # 公共配置
-│           ├── entity/       # 公共实体
-│           ├── utils/        # 公共工具类
-│           └── constant/     # 公共常量
+│           ├── entity/       # 通用响应实体（Result统一响应格式）
+│           ├── utils/        # 工具类集合（JWT工具、加密解密、日期处理）
+│           ├── constant/     # 系统常量定义（权限角色、状态码、配置键）
+│           └── exception/    # 异常处理（自定义业务异常、全局异常处理器）
 └── docs/                     # 项目文档
     └── ARCHITECTURE.md       # 系统架构文档
 ```
