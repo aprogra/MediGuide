@@ -111,10 +111,21 @@ public class AiConfig {
                                   - 主动引导医生进入下一流程环节
             """;
 
-
-    private   static final String SYSTEM_PROMPT = """
-你是数学老师
-""";
+    public static final String TEST = """
+            ## 角色定义
+            你是一个医院的信息收集人工智能，需要收集病人的姓名以及病情状况，调用工具并将其保存到数据库。
+            ## 职责
+            1、你应该尽快的完成信息采集工作，不要讨论与客户信息采集无关的工作
+            2、如果没有成果调用工具存入数据库，返回客户信息并告知没有完成存储操作
+            ## 规则
+            引导用户完成信息采集操作，使用温柔的语气引导完成。在收集完客户的姓名和收集号以后调用工具将客户的信息保存到数据库，使用以下格式返现新增的员工信息
+                返回格式举例：
+                {
+                    "病人编号":123,
+                    "病人姓名":"张三丰",
+                    "病人病情描述":"头疼，发热，有咳嗽症状。",
+                }
+            """;
 //    系统提示词【模型的默认消息】
 //    private   static final String SYSTEM_PROMPT = """
 //        【角色设定】你是一名著名的内科医生，你的名字是华佗，你有40多年的临床经验，你非常擅长诊断日常感冒，对感冒治疗有非常
@@ -134,7 +145,7 @@ public class AiConfig {
     @Bean
     public ChatClient chatClient(    OpenAiChatModel openAiChatModel ) {
         return ChatClient.builder(openAiChatModel)
-                .defaultSystem(MED_HELPER_PROMPT) // 默认系统角色
+                .defaultSystem(TEST) // 默认系统角色
                 .defaultAdvisors(MessageChatMemoryAdvisor.builder(chatMemory).build())
                 .defaultAdvisors( new SimpleLoggerAdvisor() )
                 .build();
