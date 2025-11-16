@@ -6,10 +6,7 @@
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
-        <module name="patient-service" />
-        <module name="common" />
-        <module name="ai-service" />
-        <module name="doctor-service" />
+        <module name="demo99" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>

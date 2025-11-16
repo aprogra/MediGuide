@@ -2,7 +2,6 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/MediGuide.iml" filepath="$PROJECT_DIR$/.idea/MediGuide.iml" />
       <module fileurl="file://$PROJECT_DIR$/AI_service/ai-service.iml" filepath="$PROJECT_DIR$/AI_service/ai-service.iml" />
       <module fileurl="file://$PROJECT_DIR$/common/common.iml" filepath="$PROJECT_DIR$/common/common.iml" />
       <module fileurl="file://$PROJECT_DIR$/doctor_service/doctor-service.iml" filepath="$PROJECT_DIR$/doctor_service/doctor-service.iml" />
