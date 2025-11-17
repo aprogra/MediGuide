@@ -6,7 +6,7 @@ server:
 spring:
   ai:
     openai:
-      api-key: sk-ed72892d7a9f4c13b530db0fd6490f58
+      api-key: apikey
       base-url: https://api.deepseek.com
       chat:
         options:
