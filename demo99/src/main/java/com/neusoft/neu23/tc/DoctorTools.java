@@ -46,7 +46,7 @@ public class DoctorTools {
         return result.toString();
     }
     
-    @Tool(description = "保存诊断结果工具，将医生的最终诊断信息保存到数据库中，包括患者ID、诊断医生ID、诊断医生姓名和最终诊断结果")
+    @Tool(description = "保存诊断结果工具，将医生的最终诊断信息保存到数据库中，包括患者ID、诊断医生ID、诊断医生姓名和最终诊断结果。保存之后并进行药物的推荐，通过分析药物的种类、介绍、适用症状、优势和副作用来整体进行药物推荐")
     public String saveDiagnosisResult(
             @ToolParam(description = "患者编号，参数patientId代表患者的编号") Integer patientId,
             @ToolParam(description = "诊断医生的ID，参数doctorId代表医生的编号") Integer doctorId,
@@ -57,8 +57,23 @@ public class DoctorTools {
         Integer saveResult = resultOfDiagnosisService.saveDiagnosisResult(resultOfDiagnosis);
         
         if (saveResult > 0) {
-            return String.format("诊断结果保存成功！\n患者编号：%d\n诊断医生：%s（ID：%d）\n最终诊断：%s", 
-                    patientId, doctorName, doctorId, result);
+            // 保存成功后推荐药物
+            List<String> recommendedDrugs = resultOfDiagnosisService.recommendDrugs(result);
+            
+            StringBuilder response = new StringBuilder();
+            response.append(String.format("诊断结果保存成功！\n患者编号：%d\n诊断医生：%s（ID：%d）\n最终诊断：%s\n", 
+                    patientId, doctorName, doctorId, result));
+            
+            if (!recommendedDrugs.isEmpty()) {
+                response.append("\n根据诊断结果，推荐以下药物：\n");
+                for (int i = 0; i < recommendedDrugs.size(); i++) {
+                    response.append(String.format("%d. %s\n", i + 1, recommendedDrugs.get(i)));
+                }
+            } else {
+                response.append("\n暂无匹配的药物推荐。\n");
+            }
+            
+            return response.toString();
         } else {
             return "诊断结果保存失败，请检查数据是否正确。";
         }
