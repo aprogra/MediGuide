@@ -2,10 +2,12 @@ package com.neusoft.neu23.tc;
 
 import com.neusoft.neu23.entity.Doctor;
 import com.neusoft.neu23.entity.Drug;
+import com.neusoft.neu23.entity.MedicineResult;
 import com.neusoft.neu23.entity.Patient;
 import com.neusoft.neu23.entity.ResultOfDiagnosis;
 import com.neusoft.neu23.service.DoctorService;
 import com.neusoft.neu23.service.DrugService;
+import com.neusoft.neu23.service.MedicineResultService;
 import com.neusoft.neu23.service.ResultOfDiagnosisService;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
@@ -25,6 +27,9 @@ public class DoctorTools {
     
     @Autowired
     private DrugService drugService;
+    
+    @Autowired
+    private MedicineResultService medicineResultService;
 
     @Tool(description = "根据医生输入的id来查询对应的医生信息")
     public Doctor getByID(
@@ -116,5 +121,24 @@ public class DoctorTools {
         }
         
         return result.toString();
+    }
+    
+    @Tool(description = "保存配药结果工具，将医生确定的药物配置信息保存到数据库中，包括患者ID、配药医生ID、配药医生姓名、配置药物和用药说明")
+    public String saveMedicineResult(
+            @ToolParam(description = "患者编号，参数patientId代表患者的编号") Integer patientId,
+            @ToolParam(description = "配药医生的ID，参数doctorId代表医生的编号") Integer doctorId,
+            @ToolParam(description = "配药医生的姓名，参数doctorName代表医生的姓名") String doctorName,
+            @ToolParam(description = "配置药物，参数medicines代表医生确定的药物列表") String medicines,
+            @ToolParam(description = "用药说明，参数medicineHelper代表具体的用药指导") String medicineHelper
+    ) {
+        MedicineResult medicineResult = new MedicineResult(patientId, doctorId, doctorName, medicines, medicineHelper);
+        Integer saveResult = medicineResultService.saveMedicineResult(medicineResult);
+        
+        if (saveResult > 0) {
+            return String.format("配药结果保存成功！\n患者编号：%d\n配药医生：%s（ID：%d）\n配置药物：%s\n用药说明：%s", 
+                    patientId, doctorName, doctorId, medicines, medicineHelper);
+        } else {
+            return "配药结果保存失败，请检查数据是否正确。";
+        }
     }
 }

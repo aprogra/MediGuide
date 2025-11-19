@@ -171,7 +171,7 @@ public class AiConfig {
     @Bean
     public ChatClient chatClient(    OpenAiChatModel openAiChatModel ) {
         return ChatClient.builder(openAiChatModel)
-                .defaultSystem(TEST) // 默认系统角色
+                .defaultSystem(MED_HELPER_PROMPT) // 默认系统角色
                 .defaultAdvisors(MessageChatMemoryAdvisor.builder(chatMemory).build())
                 .defaultAdvisors( new SimpleLoggerAdvisor() )
                 .build();
