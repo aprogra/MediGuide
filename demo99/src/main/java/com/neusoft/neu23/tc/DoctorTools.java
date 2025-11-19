@@ -141,4 +141,33 @@ public class DoctorTools {
             return "配药结果保存失败，请检查数据是否正确。";
         }
     }
+    
+    @Tool(description = "结束当前患者看诊并移除医生与患者的关联关系，然后获取下一位患者信息")
+    public String finishCurrentPatientAndMoveToNext(
+            @ToolParam(description = "医生ID，参数doctorId代表当前医生的ID") Integer doctorId,
+            @ToolParam(description = "当前患者ID，参数currentPatientId代表当前患者的编号") Integer currentPatientId
+    ) {
+        // 删除医生与当前患者的关联关系
+        boolean removeResult = doctorService.removeDoctorPatientRelation(doctorId, currentPatientId);
+        
+        if (!removeResult) {
+            return "结束当前患者看诊失败，无法移除医生与患者的关联关系。";
+        }
+        
+        // 获取下一位患者信息
+        Patient nextPatient = doctorService.getMinNumPatientByDoctorId(doctorId);
+        
+        if (nextPatient == null) {
+            return "当前患者看诊已结束，医生工作队列中暂无其他患者。";
+        }
+        
+        StringBuilder result = new StringBuilder();
+        result.append("当前患者看诊已结束，已从您的工作队列中移除。\n");
+        result.append("下一位患者信息如下：\n");
+        result.append(String.format("  患者编号：%d\n", nextPatient.getNum()));
+        result.append(String.format("  患者姓名：%s\n", nextPatient.getName()));
+        result.append(String.format("  病情描述：%s\n", nextPatient.getDescription() != null ? nextPatient.getDescription() : "暂无描述"));
+        
+        return result.toString();
+    }
 }

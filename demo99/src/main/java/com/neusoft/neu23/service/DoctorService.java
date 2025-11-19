@@ -11,4 +11,12 @@ public interface DoctorService {
     List<Patient> getPatientsByDoctorId(int doctorId);
     
     Patient getMinNumPatientByDoctorId(int doctorId);
+    
+    /**
+     * 删除医生与患者的关联关系
+     * @param doctorId 医生ID
+     * @param patientId 患者ID
+     * @return 删除结果：true-成功，false-失败
+     */
+    boolean removeDoctorPatientRelation(int doctorId, int patientId);
 }

@@ -86,4 +86,15 @@ public class DoctorSerivempl extends ServiceImpl<DoctorMapper, Doctor> implement
                       .last("LIMIT 1");
         return patientMapper.selectOne(patientWrapper);
     }
+    
+    @Override
+    public boolean removeDoctorPatientRelation(int doctorId, int patientId) {
+        // 删除医生与患者的关联关系
+        LambdaQueryWrapper<DoctorPatient> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(DoctorPatient::getDocId, doctorId)
+               .eq(DoctorPatient::getPid, patientId);
+        
+        int deleteResult = doctorPatientMapper.delete(wrapper);
+        return deleteResult > 0;
+    }
 }
