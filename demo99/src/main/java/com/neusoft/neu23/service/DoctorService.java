@@ -19,4 +19,12 @@ public interface DoctorService {
      * @return 删除结果：true-成功，false-失败
      */
     boolean removeDoctorPatientRelation(int doctorId, int patientId);
+    
+    /**
+     * 医生登录验证
+     * @param id 医生ID
+     * @param username 医生用户名（对应doc_name字段）
+     * @return 验证成功返回医生信息，验证失败返回null
+     */
+    Doctor login(int id, String username);
 }

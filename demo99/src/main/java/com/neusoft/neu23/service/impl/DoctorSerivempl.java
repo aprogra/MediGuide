@@ -97,4 +97,18 @@ public class DoctorSerivempl extends ServiceImpl<DoctorMapper, Doctor> implement
         int deleteResult = doctorPatientMapper.delete(wrapper);
         return deleteResult > 0;
     }
+    
+    @Override
+    public Doctor login(int id, String username) {
+        // 根据医生ID查询医生信息
+        Doctor doctor = getByID(id);
+        
+        // 验证医生是否存在以及用户名是否匹配
+        if (doctor != null && username != null && username.equals(doctor.getName())) {
+            return doctor;
+        }
+        
+        // 验证失败返回null
+        return null;
+    }
 }
