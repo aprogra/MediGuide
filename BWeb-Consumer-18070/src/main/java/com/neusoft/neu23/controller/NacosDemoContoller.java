@@ -1,15 +1,10 @@
 package com.neusoft.neu23.controller;
 
-import com.alibaba.nacos.api.NacosFactory;
-import com.alibaba.nacos.api.exception.NacosException;
-import com.alibaba.nacos.api.naming.NamingService;
-import jakarta.annotation.Resource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.client.ServiceInstance;
 import org.springframework.cloud.client.discovery.DiscoveryClient;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 
@@ -17,33 +12,44 @@ import java.util.List;
 import java.util.Random;
 
 @RestController
-@RequestMapping("/n")
 @CrossOrigin
 public class NacosDemoContoller {
-    private static  final Random random = new Random( System.currentTimeMillis()  );
 
-    @Resource
+    @Autowired
     private DiscoveryClient discoveryClient;
-
-    @Resource
+    @Autowired
     private RestTemplate restTemplate;
 
-    @GetMapping("/call")
-    public String callProvider() {
-//        从nacos中根据服务名获取服务实例列表
+    @GetMapping("/c/nacosdemo")
+    public String nacosdemo() {
+        // 获取所有的web-provider服务实例
         List<ServiceInstance> instances = discoveryClient.getInstances("web-provider");
-//        获得其中一个
-        ServiceInstance instance = instances.get(random.nextInt( instances.size()  ) ); // 3-- > 0,1,2
-//        从服务实例中获得服务地址和端口好，并且拼成URL
+        if (instances == null || instances.isEmpty()) {
+            return "没有找到web-provider服务实例";
+        }
+        
+        // 随机选择一个实例
+        int index = new Random().nextInt(instances.size());
+        ServiceInstance instance = instances.get(index);
+        
+        // 构建请求URL
         String url = "http://" + instance.getHost() + ":" + instance.getPort() + "/s/s1";
-//        服务调用
-        return restTemplate.getForObject(url, String.class);
-
+        System.out.println("调用URL: " + url);
+        
+        // 调用provider服务
+        String result = restTemplate.getForObject(url, String.class);
+        return "调用结果: " + result;
     }
-
-//    private NamingService namingService;
-//    public NacosDemoContoller( ) throws NacosException {
-//        // 初始化 Nacos 原生客户端
-//        namingService = NacosFactory.createNamingService("127.0.0.1:8848");
-//    }
+    
+    // 使用RestTemplate + LoadBalancer通过服务名调用服务
+    @GetMapping("/c/servicecall")
+    public String serviceCall() {
+        // 直接使用服务名调用，LoadBalancer会自动进行负载均衡
+        String url = "http://web-provider/s/s1";
+        System.out.println("使用服务名调用: " + url);
+        
+        // 调用provider服务
+        String result = restTemplate.getForObject(url, String.class);
+        return "服务名调用结果: " + result;
+    }
 }
