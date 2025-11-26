@@ -8,13 +8,18 @@ spring:
   # 配置OpenAI
   ai:
     openai:
-      api-key: sk-ed72892d7a9f4c13b530db0fd6490f58
+      api-key: api
       base-url: https://api.deepseek.com
       chat:
         options:
           model: deepseek-chat
           temperature: 0.8
-
+  cloud:
+    nacos:
+      discovery:
+        server-addr: 127.0.0.1:8848
+        username: nacos
+        password: nacos
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://localhost:3306/medhelper?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8&allowPublicKeyRetrieval=true&useSSL=false
