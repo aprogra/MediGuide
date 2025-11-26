@@ -32,10 +32,7 @@ public class DemoController {
     @Value("${server.port}")
     private String port;
 
-    @RequestMapping("/s1")
-    public String s1(){
-        return "web-provider:"+port;}
-    @GetMapping("/c4")
+        @GetMapping("/c4")
     public String chat4(@RequestParam(value = "msg",defaultValue = "你是谁") String msg,
                         @RequestParam( value = "chatId" ,defaultValue = "neu.edu.cn") String chatId
     ){

@@ -13,6 +13,7 @@
   <modules>
     <module>demo99</module>
     <module>BWeb-Consumer-18070</module>
+    <module>AWeb-Provider-18060</module>
   </modules>
 
   <properties>

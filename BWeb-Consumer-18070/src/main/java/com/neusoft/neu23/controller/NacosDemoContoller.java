@@ -31,11 +31,11 @@ public class NacosDemoContoller {
     @GetMapping("/call")
     public String callProvider() {
 //        从nacos中根据服务名获取服务实例列表
-        List<ServiceInstance> instances = discoveryClient.getInstances("demo99-service");
+        List<ServiceInstance> instances = discoveryClient.getInstances("web-provider");
 //        获得其中一个
         ServiceInstance instance = instances.get(random.nextInt( instances.size()  ) ); // 3-- > 0,1,2
 //        从服务实例中获得服务地址和端口好，并且拼成URL
-        String url = "http://" + instance.getHost() + ":" + instance.getPort() + "/dc/s1";
+        String url = "http://" + instance.getHost() + ":" + instance.getPort() + "/s/s1";
 //        服务调用
         return restTemplate.getForObject(url, String.class);
 

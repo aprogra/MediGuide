@@ -13,7 +13,7 @@ import org.springframework.web.client.RestTemplate;
 public class DemoContoller {
     private int i =0;
 
-    private String[] paths={  "http://localhost:18080/s/s1", "http://localhost:18081/s/s1"};
+    private String[] paths={  "http://localhost:18060/s/s1", "http://localhost:18061/s/s1"};
 
     @Autowired
 //    能够使用HTTP协议访问其它Springboot微服务
