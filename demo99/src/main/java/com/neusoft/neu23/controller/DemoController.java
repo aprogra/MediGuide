@@ -6,6 +6,7 @@ import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.openai.OpenAiChatModel;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.*;
 
@@ -28,8 +29,10 @@ public class DemoController {
                 .defaultTools(patientTools)
                 .build();
     }
+    @Value("${server.port}")
+    private String port;
 
-    @GetMapping("/c4")
+        @GetMapping("/c4")
     public String chat4(@RequestParam(value = "msg",defaultValue = "你是谁") String msg,
                         @RequestParam( value = "chatId" ,defaultValue = "neu.edu.cn") String chatId
     ){

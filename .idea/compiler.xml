@@ -8,6 +8,8 @@
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <module name="demo99" />
+        <module name="BWeb-Consumer-18070" />
+        <module name="AWeb-Provider-18060" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>

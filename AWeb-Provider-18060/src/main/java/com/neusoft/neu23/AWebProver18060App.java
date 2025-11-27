@@ -1,7 +1,6 @@
 package com.neusoft.neu23;
 
 import org.springframework.boot.SpringApplication;
-
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 
@@ -11,10 +10,11 @@ import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
  */
 @SpringBootApplication
 @EnableDiscoveryClient
-public class Demo99App
+public class AWebProver18060App
 {
-    public static void main( String[] args ){
-        SpringApplication.run(Demo99App.class,args);
+    public static void main( String[] args )
+    {
+        SpringApplication.run(AWebProver18060App.class, args);
         System.out.println( "Hello World!" );
     }
 }
