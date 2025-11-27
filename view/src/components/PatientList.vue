@@ -46,16 +46,43 @@ export default {
     const processedPatients = computed(() => {
       // 检查数据有效性并返回适当的结果
       if (!Array.isArray(props.patientsData) || props.patientsData.length === 0) {
+        console.log('患者数据为空，返回默认mock数据');
         return defaultPatients;
       }
       
-      // 处理并格式化患者数据，将后端字段映射到前端字段
-      const result = props.patientsData.map(patient => ({
-        id: patient.num || '未知ID',  // 映射后端的num字段到前端的id
-        name: patient.name || '未知患者',
-        symptoms: patient.descriptions || patient.description || '暂无症状描述'  // 映射后端的descriptions或description字段到前端的symptoms
-      }));
+      console.log('原始患者数据结构:', JSON.stringify(props.patientsData[0]));
       
+      // 处理并格式化患者数据，支持多种数据格式
+      const result = props.patientsData.map(patient => {
+        // 创建映射后的患者对象，支持多种可能的字段名称
+        const mappedPatient = {
+          // 支持多种ID字段：num（后端）、id（前端）、patientId等
+          id: patient.num !== undefined ? String(patient.num) : 
+              (patient.id || 
+               patient.patientId || 
+               patient.patient_id || 
+               '未知ID'),
+          
+          // 支持多种名称字段
+          name: patient.name || 
+                patient.patientName || 
+                patient.patient_name || 
+                '未知患者',
+          
+          // 支持多种症状描述字段
+          symptoms: patient.description || 
+                    patient.descriptions || 
+                    patient.symptoms || 
+                    patient.symptom || 
+                    patient.condition || 
+                    '暂无症状描述'
+        };
+        
+        console.log('映射后患者数据:', mappedPatient);
+        return mappedPatient;
+      });
+      
+      console.log('映射后数据示例:', result[0]);
       return result.length > 0 ? result : defaultPatients;
     })
 

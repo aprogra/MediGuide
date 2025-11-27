@@ -4,6 +4,9 @@ import { createRouter, createWebHistory } from 'vue-router'
 const ChatPage = () => import('../views/ChatPage.vue')
 const LoginPage = () => import('../views/LoginPage.vue')
 const TestPage = () => import('../views/TestPage.vue')
+const TestMedicinePage = () => import('../views/TestMedicinePage.vue')
+const MedicineTableTest = () => import('../views/MedicineTableTest.vue')
+const MedicineDataFlowTest = () => import('../views/MedicineDataFlowTest.vue')
 
 // 定义路由配置
 const routes = [
@@ -26,6 +29,33 @@ const routes = [
     component: TestPage,
     meta: {
       title: '测试页面',
+      requiresAuth: false
+    }
+  },
+  {
+    path: '/test-medicine',
+    name: 'TestMedicinePage',
+    component: TestMedicinePage,
+    meta: {
+      title: '快速配药测试',
+      requiresAuth: false
+    }
+  },
+  {
+    path: '/medicine-table-test',
+    name: 'MedicineTableTest',
+    component: MedicineTableTest,
+    meta: {
+      title: '药物表格测试',
+      requiresAuth: false
+    }
+  },
+  {
+    path: '/medicine-data-flow-test',
+    name: 'MedicineDataFlowTest',
+    component: MedicineDataFlowTest,
+    meta: {
+      title: '药品数据流程测试',
       requiresAuth: false
     }
   },
