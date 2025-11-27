@@ -914,37 +914,41 @@ export default {
         
         console.log('提取到的药品信息:', medicines);
         
-        // 确保是有效的数组
+        // 简化数据处理，使用原始JavaScript对象而不是复杂的响应式处理
         if (Array.isArray(medicines) && medicines.length > 0) {
-          // 重置数组，然后逐个添加元素，确保响应式更新
-          extractedMedicines.value.length = 0;
+          // 创建一个简单的普通JavaScript数组
+          const simpleMedicines = [];
           
-          // 为每个药品添加必要的默认字段，确保与QuickMedicineDialog组件的数据结构匹配
-          const formattedMedicines = medicines.map(med => ({
-            name: med.name || '',
-            type: med.type || '处方药',
-            effect: med.effect || '',
-            days: med.days || 7,
-            timesPerDay: med.timesPerDay || 3
-          }));
+          // 逐个处理药品信息，确保数据类型正确
+          for (let i = 0; i < medicines.length; i++) {
+            const med = medicines[i];
+            const simpleMed = {
+              name: String(med.name || '未知药品'),
+              type: String(med.type || '处方药'),
+              effect: String(med.effect || '治疗效果'),
+              days: Number(med.days || 7),
+              timesPerDay: Number(med.timesPerDay || 3)
+            };
+            simpleMedicines.push(simpleMed);
+          }
           
-          // 逐个添加元素，确保Vue的响应式系统能够正确跟踪变化
-          formattedMedicines.forEach(med => {
-            extractedMedicines.value.push(med);
-          });
+          console.log('简化后的药品数组:', simpleMedicines);
           
-          console.log('设置后的extractedMedicines:', extractedMedicines.value);
+          // 使用一个空数组赋值然后再设置实际数据，确保触发响应式更新
+          extractedMedicines.value = [];
           
-          // 强制触发响应式更新
-          extractedMedicines.value = [...extractedMedicines.value];
-          
-          // 使用nextTick确保数据完全更新后再打开弹窗
-          nextTick(() => {
-            console.log('即将打开弹窗，传递的药品数据:', extractedMedicines.value);
+          // 使用一个小的延迟确保响应式系统能够正确处理数据变化
+          setTimeout(() => {
+            // 创建一个完全新的数组实例，确保没有任何引用问题
+            const freshMedicines = [...simpleMedicines];
+            extractedMedicines.value = freshMedicines;
+            console.log('设置后的extractedMedicines:', extractedMedicines.value);
+            
+            // 确保弹窗在数据完全设置后再打开
             showQuickMedicine.value = true;
-          });
+          }, 50);
         } else {
-          // 如果没有提取到药品，清空extractedMedicines并打开弹窗
+          // 如果没有提取到药品，清空数组并打开弹窗
           extractedMedicines.value = [];
           console.log('无药品信息，extractedMedicines已清空');
           showQuickMedicine.value = true;

@@ -130,7 +130,7 @@
 </template>
 
 <script>
-import { ref, watch, nextTick } from 'vue'
+import { ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 
 export default {
@@ -153,73 +153,70 @@ export default {
   setup(props, { emit }) {
     const dialogVisible = ref(props.visible)
     
-    // 初始化药品数据，如果有预设数据则使用预设数据
-    const initializeMedicines = () => {
-      console.log('QuickMedicineDialog初始化，接收到的预设药品:', props.predefinedMedicines);
+    // 完全重新设计药品数据处理方式，使用原始的JavaScript对象
+    const medicines = ref([])
+    
+    // 直接设置药品数据的函数
+    const setMedicinesData = (presetData) => {
+      console.log('设置药品数据，接收到的预设数据:', presetData);
       
-      // 深拷贝预设数据，确保响应性
-      if (props.predefinedMedicines && Array.isArray(props.predefinedMedicines) && props.predefinedMedicines.length > 0) {
-        console.log('有预设药品数据，长度为:', props.predefinedMedicines.length);
+      // 创建一个全新的数组，避免任何Proxy嵌套问题
+      const newMedicines = []
+      
+      // 检查是否有有效的预设数据
+      if (presetData && Array.isArray(presetData) && presetData.length > 0) {
+        console.log('处理预设药品数据，数量:', presetData.length)
         
-        // 完全重新构建对象，避免Proxy嵌套问题
-        const processedMedicines = JSON.parse(JSON.stringify(props.predefinedMedicines)).map(med => {
-          // 确保所有必需字段都有值
-          return {
-            name: med.name || '未知药品',
-            type: med.type || '处方药',
-            effect: med.effect || '治疗效果',
-            days: med.days || 7,
-            timesPerDay: med.timesPerDay || 3
+        // 逐个处理每个药品，创建全新的普通对象
+        for (let i = 0; i < presetData.length; i++) {
+          const med = presetData[i]
+          
+          // 创建完全新的对象，确保没有任何Proxy
+          const newMed = {
+            name: typeof med.name === 'string' ? med.name : '未知药品',
+            type: typeof med.type === 'string' ? med.type : '处方药',
+            effect: typeof med.effect === 'string' ? med.effect : '治疗效果',
+            days: typeof med.days === 'number' ? med.days : 7,
+            timesPerDay: typeof med.timesPerDay === 'number' ? med.timesPerDay : 3
           }
-        });
-        
-        console.log('处理后的药品数据:', processedMedicines);
-        return processedMedicines;
+          
+          newMedicines.push(newMed)
+        }
       } else {
-        // 默认数据
-        const defaultMedicines = [
-          {
-            name: '',
-            type: '',
-            effect: '',
-            days: 7,
-            timesPerDay: 3
-          }
-        ];
-        console.log('使用默认药品数据');
-        return defaultMedicines;
+        // 如果没有预设数据，使用默认数据
+        console.log('使用默认药品数据')
+        newMedicines.push({
+          name: '',
+          type: '',
+          effect: '',
+          days: 7,
+          timesPerDay: 3
+        })
       }
+      
+      console.log('最终设置的药品数据:', newMedicines)
+      
+      // 完全替换整个数组，确保响应式更新
+      medicines.value = newMedicines
     }
     
-    const medicines = ref(initializeMedicines())
-
     // 监听外部visible变化
     watch(() => props.visible, (newVal) => {
       dialogVisible.value = newVal
       // 当弹窗打开时，重新初始化药品数据
       if (newVal) {
-        // 使用nextTick确保DOM更新后再设置数据
-        nextTick(() => {
-          medicines.value = initializeMedicines()
-        })
+        // 直接设置数据，不再使用nextTick，避免延迟问题
+        console.log('弹窗打开，准备设置药品数据')
+        setMedicinesData(props.predefinedMedicines)
       }
     })
     
-    // 监听预设药品数据变化
-    watch(() => props.predefinedMedicines, (newVal, oldVal) => {
-      // 检查是否有实际的数据变化，并且弹窗是可见的
-      const hasDataChanged = JSON.stringify(newVal) !== JSON.stringify(oldVal);
-      if (dialogVisible.value && hasDataChanged) {
-        // 确保newVal是有效的数组
-        if (newVal && Array.isArray(newVal)) {
-          console.log('检测到预设药品数据变化:', newVal);
-          nextTick(() => {
-            medicines.value = initializeMedicines();
-            console.log('药品数据已更新:', medicines.value);
-          });
-        }
-      }
-    }, { deep: true, immediate: true });
+    // 添加一个立即执行的watch，确保组件初始化时就能正确获取预设药品数据
+    watch(() => props.predefinedMedicines, (newVal) => {
+      console.log('监听到预设药品数据变化:', newVal, '弹窗可见状态:', dialogVisible.value)
+      // 无论弹窗是否可见，都更新数据，但只在弹窗可见时记录日志
+      setMedicinesData(newVal)
+    }, { immediate: true }); // 立即执行，确保组件初始化时就能获取数据
 
     // 监听内部visible变化
     watch(dialogVisible, (newVal) => {
@@ -320,7 +317,7 @@ export default {
         if (index > 0) {
           prompt += '\n'
         }
-        prompt += `【${medicine.name || ''}】【${medicine.type || ''}】【${medicine.effect || ''}】【'使用天数：'+${medicine.days || 7}】【'每天次数：'+${medicine.timesPerDay || 3}】`
+        prompt += `【${medicine.name || ''}】【${medicine.type || ''}】【${medicine.effect || ''}】【使用天数：${medicine.days || 7}】【每天次数：${medicine.timesPerDay || 3}】`
       })
       
       console.log('生成的提示词:', prompt)
