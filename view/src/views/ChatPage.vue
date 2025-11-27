@@ -56,14 +56,14 @@
               <p class="chat-summary">{{ getChatSummary(chat) }}</p>
             </div>
             <div class="chat-actions">
-              <i class="el-icon-delete" @click.stop="deleteChat(index)" title="删除对话"></i>
+              <el-icon class="action-icon reset-icon" @click.stop="resetChat(index)" title="重置对话"><RefreshRight /></el-icon>
+              <el-icon class="action-icon delete-icon" @click.stop="deleteChat(index)" title="删除对话"><Delete /></el-icon>
             </div>
           </div>
         </div>
         <div class="sidebar-footer">
           <div class="action-buttons">
-            <i class="el-icon-folder-opened" @click="importChatHistory" title="导入聊天历史"></i>
-            <i class="el-icon-folder" @click="exportChatHistory" title="导出聊天历史"></i>
+            <!-- 导入导出功能暂时移除 -->
           </div>
         </div>
       </aside>
@@ -81,24 +81,25 @@
             :class="['message-wrapper', message.role]"
           >
             <div class="message-avatar">
-              <i :class="message.role === 'user' ? 'el-icon-user' : 'el-icon-chat-dot-round'"></i>
+              <el-icon v-if="message.role === 'user'"><User /></el-icon>
+            <el-icon v-else><ChatDotRound /></el-icon>
             </div>
             <div class="message-content">
               <div class="message-text" v-html="formatMessage(message.content)"></div>
               <div v-if="message.role === 'assistant'" class="message-actions">
-              <i class="el-icon-refresh-left" @click="regenerateResponse(index)" title="重新输出"></i>
-              <i class="el-icon-delete" @click="deleteMessage(index)" title="删除记录"></i>
-              <!-- <i class="el-icon-document-copy" @click="copyMessage(index)" title="复制消息"></i> -->
+              <el-icon class="action-icon regenerate-icon" @click="regenerateResponse(index)" title="重新输出"><RefreshLeft /></el-icon>
+                <el-icon class="action-icon delete-icon" @click="deleteMessage(index)" title="删除记录"><Delete /></el-icon>
+            <el-icon class="action-icon copy-icon" @click="copyMessage(index)" title="复制消息"><DocumentCopy /></el-icon>
             </div>
             <div v-if="message.role === 'user'" class="message-actions">
-              <i class="el-icon-delete" @click="deleteMessage(index)" title="删除记录"></i>
-              <!-- <i class="el-icon-document-copy" @click="copyMessage(index)" title="复制消息"></i> -->
+              <el-icon class="action-icon delete-icon" @click="deleteMessage(index)" title="删除记录"><Delete /></el-icon>
+              <el-icon class="action-icon copy-icon" @click="copyMessage(index)" title="复制消息"><DocumentCopy /></el-icon>
             </div>
             </div>
           </div>
           <div v-if="isGenerating" class="message-wrapper assistant">
             <div class="message-avatar">
-              <i class="el-icon-chat-dot-round"></i>
+              <el-icon><ChatDotRound /></el-icon>
             </div>
             <div class="message-content">
               <div class="typing-indicator">
@@ -120,6 +121,15 @@
               icon="el-icon-edit-outline"
             >
               详细输入
+            </el-button>
+            <el-button 
+              type="success" 
+              size="small" 
+              @click="handleQuickMedicineClick"
+              icon="el-icon-medkit"
+              style="margin-left: 10px"
+            >
+              快速配药
             </el-button>
           </div>
           <el-input
@@ -167,22 +177,33 @@
       @submit="handleDetailedFormSubmit"
       @close="handleDialogClose"
     />
+    
+    <!-- 快速配药弹窗 -->
+    <QuickMedicineDialog
+      v-model="showQuickMedicine"
+      :patient-id="currentPatientId"
+      :predefined-medicines="extractedMedicines"
+      @submit="handleQuickMedicineSubmit"
+      @close="handleDialogClose"
+    />
   </div>
 </template>
 
 <script>
 import { ref, computed, onMounted, nextTick, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import DetailedReplyDialog from '../components/DetailedReplyDialog.vue'
 import PatientList from '../components/PatientList.vue'
+import QuickMedicineDialog from '../components/QuickMedicineDialog.vue'
 import { aiChat, getDoctorPatients } from '../services/api.js';
 
 export default {
   name: 'ChatPage',
   components: {
     PatientList,
-    DetailedReplyDialog
+    DetailedReplyDialog,
+    QuickMedicineDialog
   },
   props: {
     patientId: {
@@ -195,49 +216,50 @@ export default {
     const router = useRouter()
     // 获取路由中的patientId参数，优先级高于props
     const currentPatientId = computed(() => route.params.patientId || props.patientId)
-    // 聊天相关状态
-    const chatHistory = ref([
-      /*{
-        title: '患者咨询：头痛症状',
-        messages: [
-          {
-            role: 'user',
-            content: '医生您好，我的患者最近经常头痛，特别是在工作压力大的时候，请问可能是什么原因？',
-            timestamp: new Date(Date.now() - 3600000 * 2).toISOString()
-          },
-          {
-            role: 'assistant',
-            content: '根据您的描述，患者可能是紧张性头痛，这在工作压力大的人群中很常见。建议：1. 确保充分休息；2. 适当进行放松活动；3. 如果疼痛持续或加重，建议进行头颅CT检查以排除其他潜在问题。',
-            timestamp: new Date(Date.now() - 3600000 * 1.8).toISOString()
-          },
-          {
-            role: 'user',
-            content: '谢谢医生，我会按照您的建议进行处理。如果患者还有其他症状，我会及时联系您。',
-            timestamp: new Date(Date.now() - 3600000 * 1.5).toISOString()
-          }
-        ]
-      },
-      {
-        title: '高血压患者随访',
-        messages: [
-          {
-            role: 'user',
-            content: '医生，我想咨询一下关于高血压患者的饮食建议。',
-            timestamp: new Date(Date.now() - 86400000 * 2).toISOString()
-          },
-          {
-            role: 'assistant',
-            content: '高血压患者的饮食建议：1. 低盐饮食，每日盐摄入量不超过5克；2. 增加新鲜蔬果摄入；3. 限制高脂肪、高胆固醇食物；4. 戒烟限酒；5. 适量摄入优质蛋白质如鱼类、豆类。此外，规律运动和控制体重也很重要。',
-            timestamp: new Date(Date.now() - 86400000 * 1.5).toISOString()
-          }
-        ]
-      },*/
-      {
-        title: '新对话',
-        messages: []
-      }
-    ])
-    const currentChatIndex = ref(0)
+    // 从localStorage加载聊天历史
+  const loadChatHistory = () => {
+    // 内联生成随机ID以避免引用问题
+    const createRandomId = () => {
+      return 'chat_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    };
+    
+    try {
+      const savedHistory = localStorage.getItem('mediGuideChatHistory');
+      return savedHistory ? JSON.parse(savedHistory) : [
+        {
+          id: createRandomId(),
+          title: '新对话',
+          messages: [],
+          createdAt: new Date().toISOString()
+        }
+      ];
+    } catch (error) {
+      console.error('Failed to load chat history from localStorage:', error);
+      return [
+        {
+          id: createRandomId(),
+          title: '新对话',
+          messages: [],
+          createdAt: new Date().toISOString()
+        }
+      ];
+    }
+  };
+
+    // 从localStorage加载当前聊天索引
+  const loadCurrentChatIndex = () => {
+    try {
+      const savedIndex = localStorage.getItem('currentChatIndex');
+      return savedIndex !== null ? parseInt(savedIndex, 10) : 0;
+    } catch (error) {
+      console.error('Failed to load current chat index from localStorage:', error);
+      return 0;
+    }
+  };
+
+  // 聊天相关状态
+  const chatHistory = ref(loadChatHistory())
+  const currentChatIndex = ref(loadCurrentChatIndex())
     const messageInput = ref('')
     const isGenerating = ref(false)
     const messagesContainer = ref(null)
@@ -245,6 +267,7 @@ export default {
     // 界面状态
     const showDetailedForm = ref(false)
     const showPatientList = ref(false)
+    const showQuickMedicine = ref(false)
     const currentPatientName = ref('')
     const patientListRef = ref(null)
     const patientListData = ref([])
@@ -322,12 +345,13 @@ export default {
         const patients = await getDoctorPatients(doctorId);
         console.log('获取到的原始患者数据:', patients);
         
-        // 处理和转换患者数据，只保留三个必要字段
+        // 处理和转换患者数据，正确映射字段
         const processedPatients = Array.isArray(patients) 
           ? patients.map(patient => ({
-              id: patient.id,
-              name: patient.name,
-              symptoms: patient.symptoms
+              // 正确映射后端字段到前端需要的字段
+              id: patient.num !== undefined ? String(patient.num) : (patient.id || '未知ID'),
+              name: patient.name || '未知患者',
+              symptoms: patient.description || patient.descriptions || patient.symptoms || '暂无症状描述'
             }))
           : [];
         
@@ -376,6 +400,28 @@ export default {
       }
     }
     
+    // 处理快速配药弹窗提交的数据
+    const handleQuickMedicineSubmit = async (data) => {
+      showQuickMedicine.value = false
+      // 这里可以根据需要处理配药数据
+      console.log('快速配药数据:', data);
+      
+      // 将生成的提示词设置到输入框
+      if (data && data.prompt) {
+        messageInput.value = data.prompt;
+        
+        // 自动聚焦到输入框
+        nextTick(() => {
+          const inputElement = document.querySelector('.input-container textarea');
+          if (inputElement) {
+            inputElement.focus();
+          }
+        });
+        
+        ElMessage.success('提示词已生成并设置到输入框');
+      }
+    }
+    
     // 患者选择功能在下面的selectPatient函数中实现
     
     const switchChat = (index) => {
@@ -389,7 +435,7 @@ export default {
     }
     
     const deleteChat = (index) => {
-      this.$confirm('确定要删除这个对话吗？此操作不可恢复。', '确认删除', {
+      ElMessageBox.confirm('确定要删除这个对话吗？此操作不可恢复。', '确认删除', {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
         type: 'warning'
@@ -446,11 +492,11 @@ export default {
         ElMessage.error('生成回复失败，请重试');
         
         // 发生错误时，使用模拟回复作为备选
-        const aiReply = getMockAIReply();
+       /* const aiReply = getMockAIReply();
         currentChat.value.messages.push({
           role: 'assistant',
           content: aiReply
-        });
+        });*/
       } finally {
         isGenerating.value = false
         scrollToBottom()
@@ -502,12 +548,12 @@ export default {
         ElMessage.error('重新生成失败，请重试')
         
         // 如果API调用失败，使用模拟回复
-        const aiReply = getMockAIReply();
+        /*const aiReply = getMockAIReply();
         currentChat.value.messages.push({
           role: 'assistant',
           content: aiReply,
           timestamp: new Date().toISOString()
-        })
+        })*/
       } finally {
         isGenerating.value = false
         scrollToBottom()
@@ -516,7 +562,7 @@ export default {
     
     const deleteMessage = (messageIndex) => {
       // 显示确认对话框
-      this.$confirm('确定要删除这条消息吗？', '确认删除', {
+      ElMessageBox.confirm('确定要删除这条消息吗？', '确认删除', {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
         type: 'warning'
@@ -558,7 +604,59 @@ export default {
       showDetailedForm.value = true
     }
     
-    // 复制消息功能在UI中暂时隐藏
+    // 重置对话功能
+    const resetChat = (chatIndex) => {
+      this.$confirm('确定要重置这个对话吗？这将清空所有消息但保留对话标题。', '确认重置', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(() => {
+        const chat = chatHistory.value[chatIndex]
+        // 清空消息数组
+        chat.messages = []
+        // 如果是当前对话，确保更新
+        if (currentChatIndex.value === chatIndex) {
+          scrollToBottom()
+        }
+        ElMessage.success('对话已重置')
+      }).catch(() => {
+        // 取消重置
+      })
+    }
+    
+    // 复制消息功能
+    const copyMessage = (messageIndex) => {
+      const message = currentChat.value.messages[messageIndex]
+      const textToCopy = message.content
+      
+      // 使用现代的Clipboard API
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(textToCopy)
+          .then(() => {
+            ElMessage.success('复制成功')
+          })
+          .catch(err => {
+            console.error('复制失败:', err)
+            ElMessage.error('复制失败，请重试')
+          })
+      } else {
+        // 降级方案：使用传统的方法
+        const textArea = document.createElement('textarea')
+        textArea.value = textToCopy
+        document.body.appendChild(textArea)
+        textArea.select()
+        
+        try {
+          document.execCommand('copy')
+          ElMessage.success('复制成功')
+        } catch (err) {
+          console.error('复制失败:', err)
+          ElMessage.error('复制失败，请重试')
+        } finally {
+          document.body.removeChild(textArea)
+        }
+      }
+    }
     
     const handleDetailedFormSubmit = (data) => {
       // 将构建的提示词设置到输入框
@@ -574,7 +672,9 @@ export default {
     }
     
     const handleDialogClose = () => {
-      // 可以在这里添加对话框关闭后的处理逻辑
+      // 设置所有对话框为关闭状态
+      showQuickMedicine.value = false
+      showDetailedForm.value = false
     }
     
     const selectPatient = (patient) => {
@@ -592,15 +692,176 @@ export default {
       
       // 更新对话标题为当前患者
       if (currentChat.value.messages.length === 0) {
-        currentChat.value.title = `与${patient.name}的对话`
+        currentChat.value.title = `诊疗${patient.name}的医疗助手`
       }
     }
     
     // 文件处理相关功能已移至DetailedReplyDialog组件中
     
+    // 识别并处理药物推荐表格格式
+    const isMedicineRecommendation = (content) => {
+      // 检查内容是否包含药物推荐表格的关键词和表格格式
+      const keywords = ['药品名称', '药品类别', '药品简介', '适用症状', '治疗优势', '副作用'];
+      const hasKeywords = keywords.some(keyword => content.includes(keyword));
+      const hasTableFormat = content.includes('|') && content.includes('-');
+      return hasKeywords && hasTableFormat;
+    }
+    
+    // 从AI回复中提取药品信息
+    const extractMedicineInfo = (content) => {
+      const medicines = [];
+      
+      try {
+        // 解析表格格式的药品信息
+        const lines = content.split('\n').filter(line => line.trim());
+        
+        // 查找表头和分隔行
+        let headerIndex = -1;
+        let separatorIndex = -1;
+        for (let i = 0; i < lines.length; i++) {
+          if (lines[i].includes('药品名称') && lines[i].includes('|')) {
+            headerIndex = i;
+            // 分隔行通常在表头行之后
+            if (i + 1 < lines.length && lines[i + 1].includes('-')) {
+              separatorIndex = i + 1;
+            }
+            break;
+          }
+        }
+        
+        if (headerIndex >= 0 && separatorIndex >= 0) {
+          // 解析表头，找到各列的索引
+          const headerCells = lines[headerIndex].split('|').map(h => h.trim()).filter(h => h);
+          const nameIndex = headerCells.findIndex(h => h.includes('药品名称'));
+          const typeIndex = headerCells.findIndex(h => h.includes('药品类别'));
+          const effectIndex = headerCells.findIndex(h => h.includes('药品简介') || h.includes('适用症状') || h.includes('功效'));
+          
+          // 解析数据行
+          for (let i = separatorIndex + 1; i < lines.length; i++) {
+            if (lines[i].includes('|')) {
+              const cells = lines[i].split('|').map(cell => cell.trim()).filter(cell => cell);
+              if (cells.length > 0) {
+                const medicine = {
+                  name: cells[nameIndex >= 0 ? nameIndex : 0] || '',
+                  type: cells[typeIndex >= 0 ? typeIndex : (cells.length > 1 ? 1 : 0)] || '',
+                  effect: cells[effectIndex >= 0 ? effectIndex : (cells.length > 2 ? 2 : 0)] || '',
+                  days: 7, // 默认值
+                  timesPerDay: 3 // 默认值
+                };
+                
+                // 只添加有效的药品信息
+                if (medicine.name.trim()) {
+                  medicines.push(medicine);
+                }
+              }
+            }
+          }
+        }
+        
+        // 如果没有从表格中提取到药品信息，尝试从其他格式中提取
+        if (medicines.length === 0 && content.includes('药品名称') && content.includes('感冒药')) {
+          // 尝试提取可能的药品信息（简单实现）
+          // 这里可以根据实际需求扩展
+          console.log('未从表格中提取到药品信息，尝试其他格式');
+        }
+      } catch (error) {
+        console.error('提取药品信息时出错:', error);
+      }
+      
+      return medicines;
+    }
+
+    // 格式化药物推荐表格
+    const formatMedicineTable = (content) => {
+      // 分离表头和数据
+      const lines = content.split('\n').filter(line => line.trim());
+      let tableHTML = '<table class="medicine-recommendation-table">';
+      
+      // 查找表头行和分隔行
+      let headerIndex = -1;
+      for (let i = 0; i < lines.length; i++) {
+        if (lines[i].includes('药品名称') && lines[i].includes('药品类别')) {
+          headerIndex = i;
+          break;
+        }
+      }
+      
+      if (headerIndex >= 0) {
+        // 添加表头
+        tableHTML += '<thead><tr>';
+        const headers = lines[headerIndex].split('|').map(h => h.trim()).filter(h => h);
+        headers.forEach(header => {
+          tableHTML += `<th>${header}</th>`;
+        });
+        tableHTML += '</tr></thead>';
+        
+        // 添加表格数据（从分隔行之后开始）
+        tableHTML += '<tbody>';
+        for (let i = headerIndex + 2; i < lines.length; i++) {
+          if (lines[i].includes('|')) {
+            tableHTML += '<tr>';
+            const dataCells = lines[i].split('|').map(cell => cell.trim()).filter(cell => cell);
+            dataCells.forEach(cell => {
+              tableHTML += `<td>${cell}</td>`;
+            });
+            tableHTML += '</tr>';
+          }
+        }
+        tableHTML += '</tbody>';
+      } else {
+        // 如果没有找到标准表格格式，尝试解析其他格式的药物信息
+        tableHTML = parseAlternativeMedicineFormat(content);
+      }
+      
+      tableHTML += '</table>';
+      return tableHTML;
+    }
+
+    // 解析替代格式的药物信息
+    const parseAlternativeMedicineFormat = (content) => {
+      const lines = content.split('\n').filter(line => line.trim());
+      let tableHTML = '<table class="medicine-recommendation-table"><thead><tr>';
+      const headers = ['药品名称', '药品类别', '药品简介', '适用症状', '治疗优势', '副作用'];
+      headers.forEach(header => {
+        tableHTML += `<th>${header}</th>`;
+      });
+      tableHTML += '</tr></thead><tbody>';
+      
+      // 尝试从文本中提取药物信息（简单实现，实际可能需要更复杂的解析）
+      let currentMedicine = {};
+      lines.forEach(line => {
+        headers.forEach(header => {
+          if (line.includes(header + '：') || line.includes(header + ':')) {
+            const match = line.match(new RegExp(`${header}[：:](.+)`));
+            if (match) {
+              currentMedicine[header] = match[1].trim();
+            }
+          }
+        });
+        
+        // 当收集到足够的信息时，添加一行表格数据
+        if (Object.keys(currentMedicine).length >= 3) {
+          tableHTML += '<tr>';
+          headers.forEach(header => {
+            tableHTML += `<td>${currentMedicine[header] || '-'}</td>`;
+          });
+          tableHTML += '</tr>';
+          currentMedicine = {};
+        }
+      });
+      
+      tableHTML += '</tbody></table>';
+      return tableHTML;
+    }
+
     const formatMessage = (content) => {
-      // 简单的消息格式化，支持换行
-      return content.replace(/\n/g, '<br>')
+      // 检查是否为药物推荐表格格式
+      if (isMedicineRecommendation(content)) {
+        return formatMedicineTable(content);
+      }
+      
+      // 普通消息格式化，支持换行
+      return content.replace(/\n/g, '<br>');
     }
     
     const getChatSummary = (chat) => {
@@ -617,8 +878,85 @@ export default {
       })
     }
     
+    // 检测最新聊天记录中的药物信息
+    const checkLatestMedicineInfo = () => {
+      // 获取当前对话中的所有AI助手消息
+      const assistantMessages = currentChat.value.messages.filter(
+        msg => msg.role === 'assistant'
+      );
+      
+      // 如果没有AI助手消息，返回false
+      if (assistantMessages.length === 0) {
+        return false;
+      }
+      
+      // 获取最新的AI助手消息
+      const latestMessage = assistantMessages[assistantMessages.length - 1];
+      
+      // 使用现有的isMedicineRecommendation函数检测是否包含药物信息
+      return isMedicineRecommendation(latestMessage.content);
+    }
+    
+    // 存储提取的药品信息
+    const extractedMedicines = ref([]);
+    
+    // 处理快速配药按钮点击事件
+    const handleQuickMedicineClick = () => {
+      if (checkLatestMedicineInfo()) {
+        // 获取最新的AI助手消息
+        const assistantMessages = currentChat.value.messages.filter(
+          msg => msg.role === 'assistant'
+        );
+        const latestMessage = assistantMessages[assistantMessages.length - 1];
+        
+        // 提取药品信息
+        const medicines = extractMedicineInfo(latestMessage.content);
+        
+        console.log('提取到的药品信息:', medicines);
+        
+        // 确保是有效的数组
+        if (Array.isArray(medicines) && medicines.length > 0) {
+          // 重置数组，然后逐个添加元素，确保响应式更新
+          extractedMedicines.value.length = 0;
+          
+          // 为每个药品添加必要的默认字段，确保与QuickMedicineDialog组件的数据结构匹配
+          const formattedMedicines = medicines.map(med => ({
+            name: med.name || '',
+            type: med.type || '处方药',
+            effect: med.effect || '',
+            days: med.days || 7,
+            timesPerDay: med.timesPerDay || 3
+          }));
+          
+          // 逐个添加元素，确保Vue的响应式系统能够正确跟踪变化
+          formattedMedicines.forEach(med => {
+            extractedMedicines.value.push(med);
+          });
+          
+          console.log('设置后的extractedMedicines:', extractedMedicines.value);
+          
+          // 强制触发响应式更新
+          extractedMedicines.value = [...extractedMedicines.value];
+          
+          // 使用nextTick确保数据完全更新后再打开弹窗
+          nextTick(() => {
+            console.log('即将打开弹窗，传递的药品数据:', extractedMedicines.value);
+            showQuickMedicine.value = true;
+          });
+        } else {
+          // 如果没有提取到药品，清空extractedMedicines并打开弹窗
+          extractedMedicines.value = [];
+          console.log('无药品信息，extractedMedicines已清空');
+          showQuickMedicine.value = true;
+        }
+      } else {
+        // 如果未检测到药物信息，显示提示
+        ElMessage.warning('最新回复未检测到药品信息');
+      }
+    }
+    
     // 模拟AI回复函数
-    const getMockAIReply = () => {
+    /*const getMockAIReply = () => {
       const replies = [
         '根据您提供的信息，患者可能患有上呼吸道感染。建议多喝水，多休息，避免受凉。',
         '从症状来看，这可能是普通感冒引起的。如果症状持续加重，请及时就医。',
@@ -629,7 +967,7 @@ export default {
       
       // 随机返回一个回复
       return replies[Math.floor(Math.random() * replies.length)]
-    }
+    }*/
     
     // 从AI回复中提取症状信息
     const extractSymptomsFromAIReply = (reply) => {
@@ -642,7 +980,7 @@ export default {
       if (newPatientId) {
         // 模拟根据patientId获取患者信息
         // 实际项目中这里会调用API获取患者详情
-        const mockPatientNames = {
+        /*const mockPatientNames = {
           'P202405001': '张三',
           'P202405002': '李四',
           'P202405003': '王五',
@@ -651,9 +989,9 @@ export default {
           'P202405006': '孙八',
           'P202405007': '周九',
           'P202405008': '吴十'
-        }
+        }*/
         
-        const patientName = mockPatientNames[newPatientId] || `患者${newPatientId}`
+        const patientName =  `患者${newPatientId}`
         currentPatientName.value = patientName
         
         // 为新患者创建新对话
@@ -676,6 +1014,22 @@ export default {
     })
     
     // 初始化
+    // 保存聊天历史到localStorage
+  const saveChatHistory = () => {
+    try {
+      localStorage.setItem('mediGuideChatHistory', JSON.stringify(chatHistory.value));
+      localStorage.setItem('currentChatIndex', currentChatIndex.value.toString());
+    } catch (e) {
+      console.error('保存聊天历史失败:', e);
+    }
+  };
+
+  // 监听聊天历史变化并保存
+  watch(chatHistory, saveChatHistory, { deep: true });
+
+  // 监听当前聊天索引变化并保存
+  watch(currentChatIndex, saveChatHistory);
+
     onMounted(async () => {
       // 如果路由中有chatId参数，则使用它，否则生成新的随机聊天ID
       if (route.query.chatId) {
@@ -685,12 +1039,12 @@ export default {
         // 更新URL以显示chatId
         router.push({ query: { ...route.query, chatId: currentChatId.value } });
       }
-      
+
       // 暂时禁用自动发送初始提示词给AI（减少AI消耗）
-      const doctorId = getDoctorId();
+      /*const doctorId = getDoctorId();
       if (doctorId) {
         const initialPrompt = `医生ID: ${doctorId}, 聊天ID: ${currentChatId.value}。请根据这些信息初始化对话上下文。`;
-        try {
+        try {  
            // 设置消息输入框的值
           messageInput.value = initialPrompt;   
           // 发送消息给AI
@@ -698,8 +1052,9 @@ export default {
          } catch (error) {
           console.error('发送初始提示词失败:', error);
          }
-      }
-      
+      } */
+      console.log('已禁用自动发送初始验证消息，避免token消耗')
+
       // 加载患者列表
       try {
         console.log('组件挂载时开始加载患者列表');
@@ -721,22 +1076,29 @@ export default {
       messagesContainer,
       showDetailedForm,
       showPatientList,
+      showQuickMedicine,
       currentPatientName,
       initialSymptomsForDialog,
       currentPatientId,
       patientListRef,
       patientListData,
+      extractedMedicines,
       newChat,
       switchChat,
       deleteChat,
       sendMessage,
       regenerateResponse,
       deleteMessage,
+      copyMessage,
+      resetChat,
       handleDetailedForm,
       handleDetailedFormSubmit,
       handleDialogClose,
       selectPatient,
       handleDetailedReply,
+      handleQuickMedicineSubmit,
+      checkLatestMedicineInfo,
+      handleQuickMedicineClick,
       formatMessage,
       getChatSummary,
       scrollToBottom,
@@ -747,6 +1109,54 @@ export default {
 </script>
 
 <style scoped>
+/* 药物推荐表格样式 */
+:deep(.medicine-recommendation-table) {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 15px 0;
+  font-size: 14px;
+  background-color: #ffffff;
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+:deep(.medicine-recommendation-table th) {
+  background-color: #f5f7fa;
+  color: #303133;
+  font-weight: 600;
+  text-align: left;
+  padding: 12px 15px;
+  border-bottom: 2px solid #ebeef5;
+}
+
+:deep(.medicine-recommendation-table td) {
+  padding: 12px 15px;
+  border-bottom: 1px solid #ebeef5;
+  color: #606266;
+  vertical-align: top;
+}
+
+:deep(.medicine-recommendation-table tbody tr:last-child td) {
+  border-bottom: none;
+}
+
+:deep(.medicine-recommendation-table tbody tr:hover) {
+  background-color: #fafafa;
+}
+
+/* 响应式表格处理 */
+@media (max-width: 768px) {
+  :deep(.medicine-recommendation-table) {
+    font-size: 12px;
+  }
+  
+  :deep(.medicine-recommendation-table th),
+  :deep(.medicine-recommendation-table td) {
+    padding: 8px 10px;
+  }
+}
+
 .chat-page {
   height: 100vh;
   display: flex;
@@ -1177,4 +1587,75 @@ export default {
     padding: 12px;
   }
 }
-</style>
+    
+    /* 操作图标样式 - 明显版 */
+    .action-icon {
+      font-size: 20px; /* 更大的图标 */
+      padding: 6px;    /* 更大的点击区域 */
+      margin: 0 4px;   /* 适当的间距 */
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.3s;
+      background-color: #f0f2f5;
+      color: #606266;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 32px;
+      min-height: 32px;
+    }
+    
+    /* 基本悬停效果 */
+    .action-icon:hover {
+      transform: scale(1.1); /* 轻微放大效果 */
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    }
+    
+    /* 特定图标颜色 */
+    .delete-icon {
+      color: #f56c6c;
+    }
+    
+    .delete-icon:hover {
+      background-color: #fef0f0;
+      color: #e64340;
+    }
+    
+    .reset-icon {
+      color: #67c23a;
+    }
+    
+    .reset-icon:hover {
+      background-color: #f0f9eb;
+      color: #5daf34;
+    }
+    
+    .copy-icon {
+      color: #409eff;
+    }
+    
+    .copy-icon:hover {
+      background-color: #ecf5ff;
+      color: #66b1ff;
+    }
+    
+    .regenerate-icon {
+      color: #e6a23c;
+    }
+    
+    .regenerate-icon:hover {
+      background-color: #fdf6ec;
+      color: #ebb563;
+    }
+    
+    /* 图标容器样式 */
+    .message-actions {
+      display: flex;
+      gap: 4px;
+    }
+    
+    .chat-actions {
+      display: flex;
+      gap: 8px;
+    }
+  </style>
