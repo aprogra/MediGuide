@@ -2,7 +2,7 @@ server:
   port: 18060
 spring:
   application:
-    name: web-provider
+    name: web-provider-med
   cloud:
     nacos:
       discovery:

@@ -14,6 +14,7 @@ const api = axios.create({
 api.interceptors.request.use(
   config => {
     // 可以在这里添加token等认证信息
+    console.log('实际请求地址:', config.baseURL + config.url); // 关键：打印完整API地址
     return config;
   },
   error => {
@@ -36,17 +37,17 @@ api.interceptors.response.use(
 export const doctorLogin = async (username, id) => {
   try {
     console.log('尝试调用后端登录API验证用户名和ID');
-    
+
     // 构建与后端DoctorController.login接口匹配的请求体
     // 确保id是数字类型，与后端要求一致
     const requestData = {
       username: username.trim(),  // 对应doctor表中的doc_name，去除前后空格
       id: parseInt(id)           // 确保id是整数类型
     };
-    
+    console.log("api为：")
     // 调用后端登录API验证用户名和ID
     const response = await api.post('/doctor/login', requestData);
-    
+
     console.log('后端登录验证成功');
     return response;
   } catch (error) {

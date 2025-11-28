@@ -9,3 +9,15 @@ spring:
         server-addr: 127.0.0.1:8848
         username: nacos
         password: nacos
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/medhelper?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai
+    username: root
+    password: kaka114514
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+logging:
+  level:
+    com.neusoft.neu23: debug
+    org.springframework.web: debug
