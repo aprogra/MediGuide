@@ -360,6 +360,14 @@ export default {
         patientListData.value = processedPatients;
         console.log('patientListData已成功更新:', patientListData.value.length, '条记录');
         
+        // 实现默认选择第一个患者的功能
+        // 检查是否有患者，并且当前是否没有选中患者
+        if (processedPatients.length > 0 && (!currentPatientId.value || currentPatientId.value === 'undefined')) {
+          console.log('自动选择第一个患者:', processedPatients[0].name);
+          // 调用selectPatient函数选择第一个患者
+          selectPatient(processedPatients[0]);
+        }
+        
         return processedPatients;
       } catch (error) {
         console.error('加载患者列表错误:', error);
@@ -444,6 +452,8 @@ export default {
         if (currentChatIndex.value >= chatHistory.value.length) {
           currentChatIndex.value = Math.max(0, chatHistory.value.length - 1)
         }
+        // 显式调用saveChatHistory函数确保本地存储更新
+        saveChatHistory()
         ElMessage.success('对话已删除')
       }).catch(() => {
         // 取消删除
@@ -606,7 +616,7 @@ export default {
     
     // 重置对话功能
     const resetChat = (chatIndex) => {
-      this.$confirm('确定要重置这个对话吗？这将清空所有消息但保留对话标题。', '确认重置', {
+      ElMessageBox.confirm('确定要重置这个对话吗？这将清空所有消息但保留对话标题。', '确认重置', {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
         type: 'warning'
@@ -618,6 +628,8 @@ export default {
         if (currentChatIndex.value === chatIndex) {
           scrollToBottom()
         }
+        // 显式调用saveChatHistory函数确保本地存储更新
+        saveChatHistory()
         ElMessage.success('对话已重置')
       }).catch(() => {
         // 取消重置
@@ -914,37 +926,41 @@ export default {
         
         console.log('提取到的药品信息:', medicines);
         
-        // 确保是有效的数组
+        // 简化数据处理，使用原始JavaScript对象而不是复杂的响应式处理
         if (Array.isArray(medicines) && medicines.length > 0) {
-          // 重置数组，然后逐个添加元素，确保响应式更新
-          extractedMedicines.value.length = 0;
+          // 创建一个简单的普通JavaScript数组
+          const simpleMedicines = [];
           
-          // 为每个药品添加必要的默认字段，确保与QuickMedicineDialog组件的数据结构匹配
-          const formattedMedicines = medicines.map(med => ({
-            name: med.name || '',
-            type: med.type || '处方药',
-            effect: med.effect || '',
-            days: med.days || 7,
-            timesPerDay: med.timesPerDay || 3
-          }));
+          // 逐个处理药品信息，确保数据类型正确
+          for (let i = 0; i < medicines.length; i++) {
+            const med = medicines[i];
+            const simpleMed = {
+              name: String(med.name || '未知药品'),
+              type: String(med.type || '处方药'),
+              effect: String(med.effect || '治疗效果'),
+              days: Number(med.days || 7),
+              timesPerDay: Number(med.timesPerDay || 3)
+            };
+            simpleMedicines.push(simpleMed);
+          }
           
-          // 逐个添加元素，确保Vue的响应式系统能够正确跟踪变化
-          formattedMedicines.forEach(med => {
-            extractedMedicines.value.push(med);
-          });
+          console.log('简化后的药品数组:', simpleMedicines);
           
-          console.log('设置后的extractedMedicines:', extractedMedicines.value);
+          // 使用一个空数组赋值然后再设置实际数据，确保触发响应式更新
+          extractedMedicines.value = [];
           
-          // 强制触发响应式更新
-          extractedMedicines.value = [...extractedMedicines.value];
-          
-          // 使用nextTick确保数据完全更新后再打开弹窗
-          nextTick(() => {
-            console.log('即将打开弹窗，传递的药品数据:', extractedMedicines.value);
+          // 使用一个小的延迟确保响应式系统能够正确处理数据变化
+          setTimeout(() => {
+            // 创建一个完全新的数组实例，确保没有任何引用问题
+            const freshMedicines = [...simpleMedicines];
+            extractedMedicines.value = freshMedicines;
+            console.log('设置后的extractedMedicines:', extractedMedicines.value);
+            
+            // 确保弹窗在数据完全设置后再打开
             showQuickMedicine.value = true;
-          });
+          }, 50);
         } else {
-          // 如果没有提取到药品，清空extractedMedicines并打开弹窗
+          // 如果没有提取到药品，清空数组并打开弹窗
           extractedMedicines.value = [];
           console.log('无药品信息，extractedMedicines已清空');
           showQuickMedicine.value = true;
@@ -1041,19 +1057,8 @@ export default {
       }
 
       // 暂时禁用自动发送初始提示词给AI（减少AI消耗）
-      /*const doctorId = getDoctorId();
-      if (doctorId) {
-        const initialPrompt = `医生ID: ${doctorId}, 聊天ID: ${currentChatId.value}。请根据这些信息初始化对话上下文。`;
-        try {  
-           // 设置消息输入框的值
-          messageInput.value = initialPrompt;   
-          // 发送消息给AI
-          await sendMessage();
-         } catch (error) {
-          console.error('发送初始提示词失败:', error);
-         }
-      } */
-      console.log('已禁用自动发送初始验证消息，避免token消耗')
+      
+     // console.log('已禁用自动发送初始验证消息，避免token消耗')
 
       // 加载患者列表
       try {
@@ -1064,6 +1069,18 @@ export default {
         console.error('初始化加载患者列表失败:', error);
         ElMessage.error('加载患者列表失败，请检查网络连接或稍后重试');
       }
+      const doctorId = getDoctorId();
+      if (doctorId) {
+        const initialPrompt = `医生ID: ${doctorId}, 聊天ID: ${currentChatId.value}。请根据这些信息初始化对话上下文。`;
+        try {  
+           // 设置消息输入框的值
+          messageInput.value = initialPrompt;   
+          // 发送消息给AI
+          await sendMessage();
+         } catch (error) {
+          console.error('发送初始提示词失败:', error);
+         }
+      } 
     })
     
     return {
