@@ -360,6 +360,14 @@ export default {
         patientListData.value = processedPatients;
         console.log('patientListData已成功更新:', patientListData.value.length, '条记录');
         
+        // 实现默认选择第一个患者的功能
+        // 检查是否有患者，并且当前是否没有选中患者
+        if (processedPatients.length > 0 && (!currentPatientId.value || currentPatientId.value === 'undefined')) {
+          console.log('自动选择第一个患者:', processedPatients[0].name);
+          // 调用selectPatient函数选择第一个患者
+          selectPatient(processedPatients[0]);
+        }
+        
         return processedPatients;
       } catch (error) {
         console.error('加载患者列表错误:', error);
@@ -444,6 +452,8 @@ export default {
         if (currentChatIndex.value >= chatHistory.value.length) {
           currentChatIndex.value = Math.max(0, chatHistory.value.length - 1)
         }
+        // 显式调用saveChatHistory函数确保本地存储更新
+        saveChatHistory()
         ElMessage.success('对话已删除')
       }).catch(() => {
         // 取消删除
@@ -606,7 +616,7 @@ export default {
     
     // 重置对话功能
     const resetChat = (chatIndex) => {
-      this.$confirm('确定要重置这个对话吗？这将清空所有消息但保留对话标题。', '确认重置', {
+      ElMessageBox.confirm('确定要重置这个对话吗？这将清空所有消息但保留对话标题。', '确认重置', {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
         type: 'warning'
@@ -618,6 +628,8 @@ export default {
         if (currentChatIndex.value === chatIndex) {
           scrollToBottom()
         }
+        // 显式调用saveChatHistory函数确保本地存储更新
+        saveChatHistory()
         ElMessage.success('对话已重置')
       }).catch(() => {
         // 取消重置
@@ -1045,19 +1057,8 @@ export default {
       }
 
       // 暂时禁用自动发送初始提示词给AI（减少AI消耗）
-      /*const doctorId = getDoctorId();
-      if (doctorId) {
-        const initialPrompt = `医生ID: ${doctorId}, 聊天ID: ${currentChatId.value}。请根据这些信息初始化对话上下文。`;
-        try {  
-           // 设置消息输入框的值
-          messageInput.value = initialPrompt;   
-          // 发送消息给AI
-          await sendMessage();
-         } catch (error) {
-          console.error('发送初始提示词失败:', error);
-         }
-      } */
-      console.log('已禁用自动发送初始验证消息，避免token消耗')
+      
+     // console.log('已禁用自动发送初始验证消息，避免token消耗')
 
       // 加载患者列表
       try {
@@ -1068,6 +1069,18 @@ export default {
         console.error('初始化加载患者列表失败:', error);
         ElMessage.error('加载患者列表失败，请检查网络连接或稍后重试');
       }
+      const doctorId = getDoctorId();
+      if (doctorId) {
+        const initialPrompt = `医生ID: ${doctorId}, 聊天ID: ${currentChatId.value}。请根据这些信息初始化对话上下文。`;
+        try {  
+           // 设置消息输入框的值
+          messageInput.value = initialPrompt;   
+          // 发送消息给AI
+          await sendMessage();
+         } catch (error) {
+          console.error('发送初始提示词失败:', error);
+         }
+      } 
     })
     
     return {
