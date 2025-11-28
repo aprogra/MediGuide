@@ -254,6 +254,27 @@ export const finishCurrentPatient = async (doctorId, currentPatientId) => {
   }
 };
 
+// 调用nacos接口，接收患者数据
+export const receivePatientDataFromNacos = async () => {
+  try {
+    console.log('调用后端/receive-data接口接收患者数据');
+    // 创建一个模拟的TransferResponse对象，因为后端需要接收TransferResponse类型
+    const mockTransferResponse = {
+      success: true,
+      message: '成功',
+      response: [] // 空数组，实际数据会由后端从nacos获取
+    };
+    
+    // 调用后端POST接口
+    const response = await api.post('/patient/receive-data', mockTransferResponse);
+    console.log('调用后端nacos接口成功，返回数据:', response);
+    return response;
+  } catch (error) {
+    console.error('调用后端nacos接口失败:', error);
+    throw error;
+  }
+};
+
 export default {
   doctorLogin,
   aiChat,

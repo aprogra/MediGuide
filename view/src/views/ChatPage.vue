@@ -131,6 +131,15 @@
             >
               快速配药
             </el-button>
+            <el-button 
+              type="info" 
+              size="small" 
+              @click="callNacosApi"
+              icon="el-icon-s-operation"
+              style="margin-left: 10px"
+            >
+              调用nacos
+            </el-button>
           </div>
           <el-input
             v-model="messageInput"
@@ -196,7 +205,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import DetailedReplyDialog from '../components/DetailedReplyDialog.vue'
 import PatientList from '../components/PatientList.vue'
 import QuickMedicineDialog from '../components/QuickMedicineDialog.vue'
-import { aiChat, getDoctorPatients } from '../services/api.js';
+import { aiChat, getDoctorPatients, receivePatientDataFromNacos } from '../services/api.js';
 
 export default {
   name: 'ChatPage',
@@ -389,6 +398,27 @@ export default {
       } catch (error) {
         console.error('刷新患者列表失败:', error);
         ElMessage.error('刷新失败，请稍后重试');
+      }
+    }
+    
+    // 调用nacos接口
+    const callNacosApi = async () => {
+      try {
+        ElMessage.info('正在调用nacos接口...');
+        // 调用后端接口接收患者数据
+        const result = await receivePatientDataFromNacos();
+        
+        // 在控制台打印接收到的内容
+        console.log('从nacos接收到的数据:', result);
+        
+        // 显示成功消息
+        ElMessage.success('调用nacos接口成功');
+        
+        // 刷新患者列表，以便显示新添加的患者
+        await refreshPatientList();
+      } catch (error) {
+        console.error('调用nacos接口失败:', error);
+        ElMessage.error('调用失败，请检查后端服务是否正常');
       }
     }
     
@@ -1119,7 +1149,8 @@ export default {
       formatMessage,
       getChatSummary,
       scrollToBottom,
-      refreshPatientList
+      refreshPatientList,
+      callNacosApi
     }
   }
 }
